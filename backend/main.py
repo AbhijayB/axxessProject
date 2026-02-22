@@ -1,36 +1,57 @@
-# Import FastAPI framework to build our API
-from fastapi import FastAPI
-
-# Import Supabase client to connect to our database
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client
-
-# Import dotenv to load our secret keys from the .env file
 from dotenv import load_dotenv
-
-# Import os to read environment variables
 import os
 
-# This loads the .env file so we can access SUPABASE_URL and SUPABASE_KEY
 load_dotenv()
 
-# Create the FastAPI app instance
 app = FastAPI()
 
-# Read the Supabase credentials from the .env file
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# Create the Supabase client — this is what talks to your database
+# 🔎 Debug check for missing env variables
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("Missing Supabase credentials!")
+    print("SUPABASE_URL:", SUPABASE_URL)
+    print("SUPABASE_KEY:", SUPABASE_KEY)
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Signup endpoint — creates a new user in Supabase Auth
+
 @app.post("/signup")
 async def signup(email: str, password: str):
-    response = supabase.auth.sign_up({"email": email, "password": password})
-    return response
+    try:
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        return response
+    except Exception as e:
+        print("ERROR TYPE:", type(e).__name__)
+        print("ERROR MESSAGE:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Login endpoint — checks credentials and returns a session token
+
 @app.post("/login")
 async def login(email: str, password: str):
-    response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-    return response
+    try:
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        return response
+    except Exception as e:
+        print("ERROR TYPE:", type(e).__name__)
+        print("ERROR MESSAGE:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
